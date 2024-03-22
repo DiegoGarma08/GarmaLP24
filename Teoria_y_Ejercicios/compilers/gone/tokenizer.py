@@ -140,19 +140,20 @@ class GoneLexer(Lexer):
     #        ... some processing ...
     #        return None
     #
-    @_(r'\/\*[^\*]*$')
-    def comment_error(self, t):
-        error(self.lineno,"Unterminated comment")
-        self.index += 1
     
     # block-style comment (/* ... */)
-    ignore_COMMENT = r'\/\*(.|\n)*?\*\/'
+    @_(r'/\*(.|\n)*?\*/')
+    def COMMENT(self, t):
+        self.lineno += t.value.count('\n')
 
     # line-style comment (//...)
-    ignore_COMMENT_LINE = r'\/\/.*'
-
-    # One or more newlines \n\n\n...
-    ignore_NEWLINE = r'\n+'
+    @_(r'//.*\n')
+    def COMMENT_LINE(self, t):
+        self.lineno += 1
+    
+    @_(r'/\*(.|\n)*')
+    def comment_error(self, t):
+        error(self.lineno,"Unterminated comment")
 
     # ----------------------------------------------------------------------
     # *** YOU MUST COMPLETE : write the regexs indicated below ***
@@ -225,6 +226,11 @@ class GoneLexer(Lexer):
     # ----- YOU IMPLEMENT
     CHAR = r'\'([^\'\\]|\\[n\\\'x][0-9a-fA-F]{0,2})\''
 
+    @_(r'\'[^\']')
+    def char_error(self, t):
+        error(self.lineno,"Unterminated character constant")
+        
+
     # ----------------------------------------------------------------------
     # *** YOU MUST COMPLETE : Write the regex and add keywords ***
     #
@@ -255,12 +261,12 @@ class GoneLexer(Lexer):
     ID['var'] = 'VAR'
 
     # ----------------------------------------------------------------------
-    # Bad character error handling
-    @_(r'\'[^\']')
-    def char_error(self, t):
-        error(self.lineno,"Unterminated character constant")
-        self.index += 1
+    # One or more newlines \n\n\n...
+    @_(r'\n+')
+    def ignore_NEWLINE(self, t):
+        self.lineno += len(t.value)
 
+    # Bad character error handling
     def error(self, t):
         error(self.lineno,"Illegal character %r" % t.value[0])
         self.index += 1
