@@ -128,7 +128,7 @@ class VarDeclaration(Statement):
     datatype : DataType
     value    : (Expression, type(None))
 
-class AssignmentStatement(Statement):
+class Assignment(Statement):
     '''
     location = expression ;
     '''

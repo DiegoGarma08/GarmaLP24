@@ -107,7 +107,7 @@ fumble around a bit at first.
 
 from .errors import error
 from .ast import *
-from .typesys import check_binop, check_unaryop
+from .typesys import Type, UnsupportedOperator
 
 class CheckProgramVisitor(NodeVisitor):
     '''
@@ -121,22 +121,76 @@ class CheckProgramVisitor(NodeVisitor):
         self.symbols = { }
 
         # Put the builtin type names in the symbol table
-        # self.symbols.update(???)
+        self.symbols.update(Type.builtins)
 
     def visit_ConstDeclaration(self, node):
         # For a declaration, you'll need to check that it isn't already defined.
         # You'll put the declaration into the symbol table so that it can be looked up later
-        pass
+        self.visit(node.value)
+        node.type = node.value.type
+
+        if node.name in self.symbols:
+            error(node.lineno, f'{node.name} redefined. Previous definition on {self.symbols[node.name].lineno}')
+        else:
+            self.symbols[node.name] = node
+    
+    def visit_VarDeclaration(self, node):
+        # For a declaration, you'll need to check that it isn't already defined.
+        # You'll put the declaration into the symbol table so that it can be looked up later
+        self.visit(node.datatype)
+        node.type = node.datatype.type
+
+        if node.value:
+            self.visit(node.value)
+            if node.value.type != node.type:
+                error(node.lineno, f'type error. {node.type.name} = {node.value.type.name}')
+        
+        if node.name in self.symbols:
+            error(node.lineno, f'{node.name} redefined. Previous definition on {self.symbols[node.name].lineno}')
+        else :
+            self.symbols[node.name] = node
+
 
     def visit_SimpleLocation(self, node):
         # A location represents a place where you can read/write a value.
         # You'll need to consult the symbol table to find out information about it
-        pass
+        if node.name not in self.symbols:
+            error(node.lineno, f'{node.name} undefined')
+            node.type = Type
+            return
+        
+        sym = self.symbols[node.name]
+        if node.usage == 'write' and not isinstance(sym, VarDeclaration):
+            error(node.lineno, f"Can't assign to {node.name}")
+            node.type = Type
+        elif node.usage == 'read' and not isinstance(sym, (VarDeclaration, ConstDeclaration)):
+            error(node.lineno, f"Can't read from {node.name}")
+            node.type = Type
+        else:
+            node.type = sym.type
+    
+    def visit_Assignment(self, node):
+        node.location.usage = 'write'
+        self.visit(node.location)
+        self.visit(node.value)
+        if node.location.type != node.value.type:
+            error(node.lineno, f'type error. {node.location.type.name} = {node.value.type.name}')
+    
+    def visit_ReadValue(self, node):
+        node.location.usage = 'read'
+        self.visit(node.location)
+        node.type = node.location.type
 
     def visit_IntegerLiteral(self, node):
         # For literals, you'll need to assign a type to the node and allow it to
         # propagate.  This type will work it's way through various operators
-        pass
+        node.type = Type.lookup('int')
+    
+    def visit_FloatLiteral(self, node):
+        node.type = Type.lookup('float')
+    
+    def visit_CharLiteral(self, node):
+        node.type = Type.lookup('char')
 
     def visit_BinOp(self, node):
         # For operators, you need to visit each operand separately.  You'll
@@ -146,11 +200,27 @@ class CheckProgramVisitor(NodeVisitor):
         self.visit(node.right)
 
         # Perform various checks here
-        ...
+        try:
+            node.type = node.left.type.check_binop(node.op, node.right.type)
+        except UnsupportedOperator as e:
+            error(node.lineno, str(e))
+            node.type = Type
+    
+    def visit_UnaryOp(self, node):
+        self.visit(node.operand)
+        try:
+            node.type = node.operand.type.check_unaryop(node.op)
+        except UnsupportedOperator as e:
+            error(node.lineno, str(e))
+            node.type = Type
 
     def visit_SimpleType(self, node):
         # Associate a type name such as "int" with a Type object
-        pass
+        try:
+            node.type = Type.lookup(node.name)
+        except KeyError as e:
+            error(node.lineno, f"unknown type name {node.name}")
+            node.type = Type
 
 # ----------------------------------------------------------------------
 #                       DO NOT MODIFY ANYTHING BELOW       

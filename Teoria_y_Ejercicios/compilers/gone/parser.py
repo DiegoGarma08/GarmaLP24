@@ -153,7 +153,7 @@ class GoneParser(Parser):
     
     @_('location ASSIGN expression SEMI')
     def assignment_statement(self, p):
-        return AssignmentStatement(p.location, p.expression, lineno=p.lineno)
+        return Assignment(p.location, p.expression, lineno=p.lineno)
 
     @_('PRINT expression SEMI')
     def print_statement(self, p):

@@ -18,34 +18,87 @@ KEEP IT SIMPLE. REPEAT. SIMPLE.
 
 '''
 
-# List of builtin types.  These will get added to the symbol table
-builtin_types = [ 'int', 'float', 'char' ]
+class UnsupportedOperator(Exception):
+    pass
 
-# Dict mapping all valid binary operations to a result type
-_supported_binops = {
-    ('int', '+', 'int') : 'int',
-    ('int', '-', 'int') : 'int',
-    # You define
+class Type(object):
+    # These class attributes must be filled in by subclasses
+    name = 'type'
+    binary_ops = { }
+    unary_ops = { }
+
+    # Fake "lineno" attribute to use if a Type gets mixed up with error reporting
+    lineno = '<builtin type>'
+
+    # Tracking of builtin types
+    builtins = { }
+    @classmethod
+    def __init_subclass__(cls):
+        assert 'name' in cls.__dict__, 'name must be defined'
+        assert 'binary_ops' in cls.__dict__, 'binary_ops must be defined'
+        assert 'unary_ops' in cls.__dict__, 'unary_ops must be defined'
+        Type.builtins[cls.name] = cls
+
+    @classmethod
+    def check_binop(cls, op, other):
+        if cls is Type or other is Type:
+            return Type
+        result = cls.binary_ops.get((cls.name, op, other.name))
+        if result:
+            return cls.builtins[result]
+        else:
+            raise UnsupportedOperator(f'Unsupported operation {cls.name} {op} {other.name}')
+
+    @classmethod
+    def check_unaryop(cls, op):
+        if cls is Type:
+            return Type
+        result = cls.unary_ops.get((op, cls.name))
+        if result:
+            return cls.builtins[result]
+        else:
+            raise UnsupportedOperator(f'Unsupported operation {op} {cls.name}')
+
+    @classmethod
+    def lookup(cls, name):
+        return cls.builtins[name]
+
+class IntType(Type):
+    name = 'int'
+    binary_ops = {
+        ('int', '+', 'int') : 'int',
+        ('int', '-', 'int') : 'int',
+        ('int', '*', 'int') : 'int',
+        ('int', '/', 'int') : 'int',
     }
 
-# Dict mapping all valid unary operations to result type
-_supported_unaryops = {
-    ('-', 'int') : 'int',
-    # You define
+    unary_ops = {
+        ('+', 'int') : 'int',
+        ('-', 'int') : 'int',
+    }
+
+class FloatType(Type):
+    name = 'float'
+    binary_ops = {
+        ('float', '+', 'float') : 'float',
+        ('float', '-', 'float') : 'float',
+        ('float', '*', 'float') : 'float',
+        ('float', '/', 'float') : 'float',
+    } 
+
+    unary_ops = {
+        ('+', 'float') : 'float',
+        ('-', 'float') : 'float',
+    }
+
+class CharType(Type):
+    name = 'char'
+    binary_ops = {
+    }
+
+    unary_ops = {
     }
     
-def check_binop(left_type, op, right_type):
-    ''' 
-    Check the validity of a binary operator. 
-    '''
-    return _supported_binops.get((left_type, op, right_type))
-
-def check_unaryop(op, type):
-    '''
-    Check the validity of a unary operator. 
-    '''
-    return _supported_unaryops.get((op, type))
-
 
 
 
