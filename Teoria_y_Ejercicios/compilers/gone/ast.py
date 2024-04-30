@@ -85,13 +85,54 @@ class Literal(Expression):
     '''
     A literal value such as 2, 2.5, or "two"
     '''
+
+class DataType(AST):
+    '''
+    Base class for a datatype
+    '''
     pass
+
+class SimpleType(DataType):
+    '''
+    A simple datatype name (e.g., 'int', 'float')
+    '''
+    name : str
+
+class Location(AST):
+    '''
+    Base class for locations
+    '''
+
+class SimpleLocation(Location):
+    name : str
 
 # Concrete AST nodes
 class PrintStatement(Statement):
     '''
     print expression ;
     '''
+    value : Expression
+
+class ConstDeclaration(Statement):
+    '''
+    const name = expression ;
+    '''
+    name  : str
+    value : Expression
+
+class VarDeclaration(Statement):
+    '''
+    var name datatype [ = value ];
+    '''
+    name     : str
+    datatype : DataType
+    value    : (Expression, type(None))
+
+class AssignmentStatement(Statement):
+    '''
+    location = expression ;
+    '''
+    location : Location
     value : Expression
 
 class IntegerLiteral(Literal):
@@ -103,6 +144,13 @@ class FloatLiteral(Literal):
 class CharLiteral(Literal):
     value : str
 
+class UnaryOp(Expression):
+    '''
+    A Unary operator such as -2 or +3
+    '''
+    op      : str
+    operand : Expression
+
 class BinOp(Expression):
     '''
     A Binary operator such as 2 + 3 or x * y
@@ -110,6 +158,12 @@ class BinOp(Expression):
     op    : str
     left  : Expression
     right : Expression
+
+class ReadValue(Expression):
+    '''
+    Read a value from a location
+    '''
+    location : Location
 
 # ----------------------------------------------------------------------
 #                  DO NOT MODIFY ANYTHING BELOW HERE
