@@ -84,6 +84,7 @@ class GoneParser(Parser):
     # Operator precedence table.   Operators must follow the same 
     # precedence rules as in Python.  Instructions to be given in the project.
 
+    # Precedence and associativity of the operators
     precedence = (
         ('left', PLUS, MINUS),
         ('left', TIMES, DIVIDE),
