@@ -14,15 +14,26 @@ import ast
 top = ast.parse(code)
 #print(ast.dump(top))
 
+# dict mapping valid type/operator combinations to result types
+supported_binops = {
+    ('num', 'Add', 'num') : 'num',
+    ('num', 'Mult', 'num') : 'num',
+    ('num', 'Sub', 'num') : 'num',
+    ('num', 'Div', 'num') : 'num',
+    ('string', 'Add', 'string') : 'string',
+    ('string', 'Mult', 'num') : 'string',
+    ('num', 'Mult', 'string') : 'string'
+}
+
 class SimpleCheck(ast.NodeVisitor):
         def __init__(self):
             self.symbols = { }
 
         def visit_Num(self, node):
-            node.type = 'Num'
+            node.type = 'num'
 
         def visit_Str(self, node):
-            node.type = 'Str'
+            node.type = 'str'
 
         def visit_Assign(self, node):
             # Visit the right-hand-side value to get types assignment
@@ -53,11 +64,12 @@ class SimpleCheck(ast.NodeVisitor):
             self.visit(node.right)
             left_type = getattr(node.left, 'type', None)
             right_type = getattr(node.right, 'type', None)
-            if left_type != right_type:
-                print('Error: Type error.  %s %s %s' % (left_type, type(node.op).__name__, right_type))
+            op = type(node.op).__name__
+            if (left_type, op, right_type) not in supported_binops:
+                print('Error: Type error.  %s %s %s' % (left_type, op, right_type))
                 node.type = 'error'
             else:
-                node.type = left_type
+                node.type = supported_binops[left_type, op, right_type]
 
 checker = SimpleCheck()
 checker.visit(top)
