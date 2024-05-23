@@ -141,10 +141,12 @@ class GenerateLLVM(object):
         self.temps[target] = Constant(int_type, value)
 
     def emit_MOVF(self, value, target):
+        self.temps[target] = Constant(float_type, value)
+
         pass                # You must implement
 
     def emit_MOVB(self, value, target):
-        pass                # You must implement
+        self.temps[target] = Constant(byte_type, value)
 
     # Allocation of variables.  Declare as global variables and set to
     # a sensible initial value.
@@ -154,10 +156,15 @@ class GenerateLLVM(object):
         self.vars[name] = var
 
     def emit_VARF(self, name):
+        var = GlobalVariable(self.module, float_type, name=name)
+        var.initializer = Constant(float_type, 0.0)
+        self.vars[name] = var
         pass                # You must implement
 
     def emit_VARB(self, name):
-        pass                # You must implement
+        var = GlobalVariable(self.module, byte_type, name=name)
+        var.initializer = Constant(byte_type, 0)
+        self.vars[name] = var
 
     # Load/store instructions for variables.  Load needs to pull a
     # value from a global variable and store in a temporary. Store
@@ -166,19 +173,25 @@ class GenerateLLVM(object):
         self.temps[target] = self.builder.load(self.vars[name], target)
 
     def emit_LOADF(self, name, target):
+        self.temps[target] = self.builder.load(self.vars[name], target)
         pass                 # You must implement
 
     def emit_LOADB(self, name, target):
+        self.temps[target] = self.builder.load(self.vars[name], target)
         pass                 # You must implement
 
     def emit_STOREI(self, source, target):
         self.builder.store(self.temps[source], self.vars[target])
 
     def emit_STOREF(self, source, target):
+
+        self.builder.store(self.temps[source], self.vars[target])
         pass                 # You must implement
 
 
     def emit_STOREB(self, source, target):
+
+        self.builder.store(self.temps[source], self.vars[target])
         pass                 # You must implement
 
 
@@ -187,27 +200,34 @@ class GenerateLLVM(object):
         self.temps[target] = self.builder.add(self.temps[left], self.temps[right], target)
 
     def emit_ADDF(self, left, right, target):
+        self.temps[target] = self.builder.fadd(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     # Binary - operator
     def emit_SUBI(self, left, right, target):
+        self.temps[target] = self.builder.sub(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     def emit_SUBF(self, left, right, target):
+        self.temps[target] = self.builder.fsub(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     # Binary * operator
     def emit_MULI(self, left, right, target):
+        self.temps[target] = self.builder.mul(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     def emit_MULF(self, left, right, target):
+        self.temps[target] = self.builder.fmul(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     # Binary / operator
     def emit_DIVI(self, left, right, target):
+        self.temps[target] = self.builder.sdiv(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     def emit_DIVF(self, left, right, target):
+        self.temps[target] = self.builder.fdiv(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
     # Print statements
@@ -215,9 +235,11 @@ class GenerateLLVM(object):
         self.builder.call(self.runtime['_print_int'], [self.temps[source]])
 
     def emit_PRINTF(self, source):
+        self.builder.call(self.runtime['_print_float'], [self.temps[source]])
         pass                 # You must implement
 
     def emit_PRINTB(self, source):
+        self.builder.call(self.runtime['_print_byte'], [self.temps[source]])
         pass                 # You must implement
 
 #######################################################################

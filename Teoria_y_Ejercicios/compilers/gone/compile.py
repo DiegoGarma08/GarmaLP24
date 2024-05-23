@@ -20,7 +20,7 @@ from .errors import errors_reported
 # Name of the runtime library
 _rtlib = os.path.join(os.path.dirname(__file__), 'gonert.c')
 
-# clang installation
+# Where CLANG is installed
 CLANG = 'clang'
 
 def main():
