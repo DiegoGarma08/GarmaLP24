@@ -157,6 +157,11 @@ class GenerateCode(ast.NodeVisitor):
         target = self.new_register()
         self.code.append(('MOVF', node.value, target))
         node.register = target
+    
+    def visit_CharLiteral(self, node):
+        target = self.new_register()
+        self.code.append(('MOVB', ord(node.value), target))
+        node.register = target
 
     def visit_BinOp(self, node):
         self.visit(node.left)
@@ -189,6 +194,23 @@ class GenerateCode(ast.NodeVisitor):
         inst = (code, node.left.register, node.right.register, target)
         self.code.append(inst)
         node.register = target
+    
+    def visit_UnaryOp(self, node):
+        self.visit(node.operand)
+        if node.op == '-' and node.type.name == 'int':
+            zero = self.new_register()
+            self.code.append(('MOVI', 0, zero))
+            target = self.new_register()
+            self.code.append(('SUBI', zero, node.operand.register, target))
+            node.register = target
+        elif node.op == '-' and node.type.name == 'float':
+            zero = self.new_register()
+            self.code.append(('MOVF', 0.0, zero))
+            target = self.new_register()
+            self.code.append(('SUBF', zero, node.operand.register, target))
+            node.register = target
+        else:
+            node.register = node.operand.register
 
     # CHALLENGE:  Figure out some more sane way to refactor the above code
 
@@ -198,8 +220,64 @@ class GenerateCode(ast.NodeVisitor):
             code = 'PRINTI'
         elif node.value.type.name == 'float':
             code = 'PRINTF'
+        elif node.value.type.name == 'char':
+            code = 'PRINTB'
         inst = (code, node.value.register)
         self.code.append(inst)
+    
+    def emit_declaration(self, node):
+        if node.value:
+            self.visit(node.value)
+        if node.type.name == 'int':
+            code = 'VARI'
+            store = 'STOREI'
+        elif node.type.name == 'float':
+            code = 'VARF'
+            store = 'STOREF'
+        elif node.type.name == 'char':
+            code = 'VARB'
+            store = 'STOREB'
+        else:
+            raise RuntimeError(f'Unknown type {node.type.name}')
+        self.code.append((code, node.name))
+        if node.value:
+            self.code.append((store, node.value.register, node.name))
+    visit_ConstDeclaration = emit_declaration
+    visit_VarDeclaration = emit_declaration
+    
+    def visit_SimpleLocation(self, node):
+        if node.usage == 'read':
+            if node.type.name == 'int':
+                code = 'LOADI'
+            elif node.type.name == 'float':
+                code = 'LOADF'
+            elif node.type.name == 'char':
+                code = 'LOADB'
+            else:
+                raise RuntimeError(f'Unknown type {node.type.name}')
+            target = self.new_register()
+            self.code.append((code, node.name, target))
+            node.register = target
+        elif node.usage == 'write':
+            if node.type.name == 'int':
+                code = 'STOREI'
+            elif node.type.name == 'float':
+                code = 'STOREF'
+            elif node.type.name == 'char':
+                code = 'STOREB'
+            else:
+                raise RuntimeError(f'Unknown type {node.value.type.name}')
+            self.code.append((code, node.register, node.name))
+    
+    def visit_ReadValue(self, node):
+        self.visit(node.location)
+        node.register = node.location.register
+    
+    def visit_Assignment(self, node):
+        self.visit(node.value)
+        node.location.register = node.value.register
+        self.visit(node.location)
+
 
 # ----------------------------------------------------------------------
 #                          TESTING/MAIN PROGRAM
