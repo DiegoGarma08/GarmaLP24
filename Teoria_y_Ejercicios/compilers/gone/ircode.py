@@ -162,6 +162,12 @@ class GenerateCode(ast.NodeVisitor):
         target = self.new_register()
         self.code.append(('MOVB', ord(node.value), target))
         node.register = target
+    
+    def visit_BooleanLiteral(self, node):
+        target = self.new_register()
+        value = 1 if node.value else 0
+        self.code.append(('MOVI', value, target))
+        node.register = target
 
     def visit_BinOp(self, node):
         self.visit(node.left)
@@ -189,6 +195,28 @@ class GenerateCode(ast.NodeVisitor):
                 code = 'DIVF'
             else:
                 raise RuntimeError(f'Unknown binop {op}')
+        elif node.type.name == 'char':
+            if op == '+':
+                code = 'ADDB'
+            elif op == '-':
+                code = 'SUBB'
+            elif op == '*':
+                code = 'MULB'
+            elif op == '/':
+                code = 'DIVB'
+            else:
+                raise RuntimeError(f'Unknown binop {op}')
+        elif node.type.name == 'bool':
+            if op == '&&':
+                code = 'AND'
+            elif op == '||':
+                code = 'OR'
+            elif op == '==':
+                code = 'EQ'
+            elif op == '!=':
+                code = 'NE'
+            else:
+                raise RuntimeError(f'Unknown binop {op}')
 
         target = self.new_register()
         inst = (code, node.left.register, node.right.register, target)
@@ -209,6 +237,9 @@ class GenerateCode(ast.NodeVisitor):
             target = self.new_register()
             self.code.append(('SUBF', zero, node.operand.register, target))
             node.register = target
+        elif node.op == '!' and node.type.name == 'bool':
+            self.code.append(('SUBI', 1, node.operand.register, node.operand.register))
+            node.register = node.operand.register
         else:
             node.register = node.operand.register
 
@@ -216,7 +247,7 @@ class GenerateCode(ast.NodeVisitor):
 
     def visit_PrintStatement(self, node):
         self.visit(node.value)
-        if node.value.type.name == 'int':
+        if node.value.type.name == 'int' or node.value.type.name == 'bool':
             code = 'PRINTI'
         elif node.value.type.name == 'float':
             code = 'PRINTF'
@@ -247,7 +278,7 @@ class GenerateCode(ast.NodeVisitor):
     
     def visit_SimpleLocation(self, node):
         if node.usage == 'read':
-            if node.type.name == 'int':
+            if node.type.name == 'int' or node.type.name == 'bool':
                 code = 'LOADI'
             elif node.type.name == 'float':
                 code = 'LOADF'
@@ -259,7 +290,7 @@ class GenerateCode(ast.NodeVisitor):
             self.code.append((code, node.name, target))
             node.register = target
         elif node.usage == 'write':
-            if node.type.name == 'int':
+            if node.type.name == 'int' or node.type.name == 'bool':
                 code = 'STOREI'
             elif node.type.name == 'float':
                 code = 'STOREF'

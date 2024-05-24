@@ -30,6 +30,7 @@ from llvmlite.ir import (
 int_type    = IntType(32)         # 32-bit integer
 float_type  = DoubleType()        # 64-bit float
 byte_type   = IntType(8)          # 8-bit integer
+bool_type   = IntType(1)          # 1-bit integer (boolean)
 
 void_type   = VoidType()          # Void type.  This is a special type
                                   # used for internal functions returning
@@ -114,6 +115,10 @@ class GenerateLLVM(object):
         self.runtime['_print_byte'] = Function(self.module,
                                                 FunctionType(void_type, [byte_type]),
                                                 name="_print_byte")
+        
+        self.runtime['_print_bool'] = Function(self.module,
+                                                FunctionType(void_type, [bool_type]),
+                                                name="_print_bool")
 
     def generate_code(self, ircode):
         # Given a sequence of SSA intermediate code tuples, generate LLVM
@@ -138,7 +143,10 @@ class GenerateLLVM(object):
 
     # Creation of literal values.  Simply define as LLVM constants.
     def emit_MOVI(self, value, target):
-        self.temps[target] = Constant(int_type, value)
+        if isinstance(value, int):
+            self.temps[target] = Constant(int_type, value)
+        elif isinstance(value, bool):
+            self.temps[target] = Constant(bool_type, int(value))
 
     def emit_MOVF(self, value, target):
         self.temps[target] = Constant(float_type, value)
@@ -230,9 +238,87 @@ class GenerateLLVM(object):
         self.temps[target] = self.builder.fdiv(self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
+    def emit_EQI(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('==', self.temps[left], self.temps[right], target)
+    
+    def emit_EQF(self, left, right, target):
+        self.temps[target] = self.builder.fcmp_ordered('==', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_EQB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('==', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+    
+    def emit_NEI(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('!=', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_NEF(self, left, right, target):
+        self.temps[target] = self.builder.fcmp_ordered('!=', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_NEB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('!=', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_LTI(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('<', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_LTF(self, left, right, target):
+        self.temps[target] = self.builder.fcmp_ordered('<', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_LTB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('<', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_LEI(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('<=', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_LEF(self, left, right, target):
+        self.temps[target] = self.builder.fcmp_ordered('<=', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+    
+    def emit_LEB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('<=', self.temps[left], self.temps[right], target)
+
+    def emit_GTI(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('>', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
+    def emit_GTF(self, left, right, target):
+        self.temps[target] = self.builder.fcmp_ordered('>',self.temps[left], self.temps[right], target)
+    
+    def emit_GTB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('>', self.temps[left], self.temps[right], target)
+    
+    def emit_GEI(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('>=', self.temps[left], self.temps[right], target)
+    
+    def emit_GEF(self, left, right, target):
+        self.temps[target] = self.builder.fcmp_ordered('>=',self.temps[left], self.temps[right], target)
+    
+    def emit_GEB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('>=', self.temps[left], self.temps[right], target)
+    
+    def emit_AND(self, left, right, target):
+        self.temps[target] = self.builder.and_(self.temps[left], self.temps[right], target)
+    
+    def emit_OR(self, left, right, target):
+        self.temps[target] = self.builder.or_(self.temps[left], self.temps[right], target)
+    
+    def emit_NOT(self, operand, target):
+        self.temps[target] = self.builder.not_(self.temps[operand], target)
+        
+
     # Print statements
     def emit_PRINTI(self, source):
-        self.builder.call(self.runtime['_print_int'], [self.temps[source]])
+        if isinstance(self.temps[source].type, IntType):
+            self.builder.call(self.runtime['_print_int'], [self.temps[source]])
+        elif isinstance(self.temps[source].type, BoolType):
+            self.builder.call(self.runtime['_print_bool'], [self.temps[source]])
 
     def emit_PRINTF(self, source):
         self.builder.call(self.runtime['_print_float'], [self.temps[source]])

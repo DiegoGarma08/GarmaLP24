@@ -202,17 +202,37 @@ class CheckProgramVisitor(NodeVisitor):
         self.visit(node.left)
         self.visit(node.right)
 
+        # Mapping of operators
+        op_map = {
+            '&&': 'and',
+            '||': 'or',
+            '==': '==',
+            '!=': '!=',
+            '<': '<',
+            '<=': '<=',
+            '>': '>',
+            '>=': '>=',
+        }
+
+        op = op_map.get(node.op, node.op)
+
         # Perform various checks here
         try:
-            node.type = node.left.type.check_binop(node.op, node.right.type)
+            node.type = node.left.type.check_binop(op, node.right.type)
         except UnsupportedOperator as e:
             error(node.lineno, str(e))
             node.type = Type
     
     def visit_UnaryOp(self, node):
         self.visit(node.operand)
+        # Mapping of operators
+        op_map = {
+            '!': 'not',
+        }
+
+        op = op_map.get(node.op, node.op)
         try:
-            node.type = node.operand.type.check_unaryop(node.op)
+            node.type = node.operand.type.check_unaryop(op)
         except UnsupportedOperator as e:
             error(node.lineno, str(e))
             node.type = Type
