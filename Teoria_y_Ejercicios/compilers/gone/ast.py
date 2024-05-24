@@ -144,6 +144,9 @@ class FloatLiteral(Literal):
 class CharLiteral(Literal):
     value : str
 
+class BoolLiteral(Literal):
+    value : bool
+
 class UnaryOp(Expression):
     '''
     A Unary operator such as -2 or +3

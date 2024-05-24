@@ -43,7 +43,11 @@ class Type(object):
     def check_binop(cls, op, other):
         if cls is Type or other is Type:
             return Type
+        if cls.name == other.name:
+            return cls
+        print(cls.name, op, other.name)
         result = cls.binary_ops.get((cls.name, op, other.name))
+        print(result)
         if result:
             return cls.builtins[result]
         else:
@@ -53,6 +57,9 @@ class Type(object):
     def check_unaryop(cls, op):
         if cls is Type:
             return Type
+        if cls.name:
+            return cls
+        print(cls.name, op)
         result = cls.unary_ops.get((op, cls.name))
         if result:
             return cls.builtins[result]
@@ -66,6 +73,12 @@ class Type(object):
 class IntType(Type):
     name = 'int'
     binary_ops = {
+        ('int', 'EQ', 'int') : 'bool',
+        ('int', 'NE', 'int') : 'bool',
+        ('int', 'LT', 'int') : 'bool',
+        ('int', 'LE', 'int') : 'bool',
+        ('int', 'GT', 'int') : 'bool',
+        ('int', 'GE', 'int') : 'bool',
         ('int', '+', 'int') : 'int',
         ('int', '-', 'int') : 'int',
         ('int', '*', 'int') : 'int',
@@ -80,6 +93,12 @@ class IntType(Type):
 class FloatType(Type):
     name = 'float'
     binary_ops = {
+        ('float', 'EQ', 'float') : 'bool',
+        ('float', 'NE', 'float') : 'bool',
+        ('float', 'LT', 'float') : 'bool',
+        ('float', 'LE', 'float') : 'bool',
+        ('float', 'GT', 'float') : 'bool',
+        ('float', 'GE', 'float') : 'bool',
         ('float', '+', 'float') : 'float',
         ('float', '-', 'float') : 'float',
         ('float', '*', 'float') : 'float',
@@ -97,6 +116,19 @@ class CharType(Type):
     }
 
     unary_ops = {
+    }
+
+class BoolType(Type):
+    name = 'bool'
+    binary_ops = {
+        ('bool', 'and', 'bool') : 'bool',
+        ('bool', 'or', 'bool') : 'bool',
+        ('bool', '==', 'bool') : 'bool',
+        ('bool', '!=', 'bool') : 'bool',
+    }
+
+    unary_ops = {
+        ('NOT', 'bool') : 'bool',
     }
     
 

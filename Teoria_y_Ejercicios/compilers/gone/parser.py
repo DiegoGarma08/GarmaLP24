@@ -86,8 +86,12 @@ class GoneParser(Parser):
 
     # Precedence and associativity of the operators
     precedence = (
+        ('left', OR),
+        ('left', AND),
+        ('left', EQ, NE, LT, LE, GT, GE),
         ('left', PLUS, MINUS),
         ('left', TIMES, DIVIDE),
+        ('right', NOT)
     )
 
     # ----------------------------------------------------------------------
@@ -167,10 +171,22 @@ class GoneParser(Parser):
     def expression(self, p):
         return UnaryOp(p[0], p.expression, lineno=p.lineno)
     
+    @_('NOT expression')
+    def expression(self, p):
+        return UnaryOp(p[0], p.expression, lineno=p.lineno)
+    
     @_('expression PLUS expression',
        'expression MINUS expression',
        'expression TIMES expression',
-       'expression DIVIDE expression')
+       'expression DIVIDE expression',
+       'expression LT expression',
+       'expression LE expression',
+       'expression GT expression',
+       'expression GE expression',
+       'expression EQ expression',
+       'expression NE expression',
+       'expression AND expression',
+       'expression OR expression')
     def expression(self, p):
         return BinOp(p[1], p.expression0, p.expression1, lineno=p.lineno)
     
@@ -197,6 +213,13 @@ class GoneParser(Parser):
     @_('CHAR')
     def literal(self, p):
         return CharLiteral(eval(p.CHAR),lineno=p.lineno)
+    
+    @_('BOOL')
+    def literal(self, p):
+        if p.BOOL == 'true':
+            return BoolLiteral(True,lineno=p.lineno)
+        else:
+            return BoolLiteral(False,lineno=p.lineno)
     
     @_('ID')
     def location(self, p):

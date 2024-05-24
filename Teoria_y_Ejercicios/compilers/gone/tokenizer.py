@@ -111,10 +111,10 @@ class GoneLexer(Lexer):
         ID,
 
         # Literals
-        INTEGER, FLOAT, CHAR, FLOAT_EXP,INTEGER_HEX, INTEGER_OCT, INTEGER_BIN,
+        INTEGER, FLOAT, CHAR, FLOAT_EXP,INTEGER_HEX, INTEGER_OCT, INTEGER_BIN,BOOL,
 
         # Operators 
-        PLUS, MINUS, TIMES, DIVIDE, ASSIGN, SEMI,
+        PLUS, MINUS, TIMES, DIVIDE, ASSIGN, SEMI,OR,AND,EQ,NE,LE,GE,GT,LT,NOT,
 
         # Other symbols
         LPAREN, RPAREN,
@@ -168,6 +168,15 @@ class GoneLexer(Lexer):
     MINUS = r'-'      # Regex for a single minur sign
     LPAREN = r'\('    # Regex for a left parenthesis
     RPAREN = r'\)'    # Regex for a right parenthesis
+    OR = r'\|\|'      # Regex for a logical OR
+    AND = r'&&'       # Regex for a logical AND
+    EQ = r'=='        # Regex for a logical equal
+    NE = r'!='        # Regex for a logical not equal
+    LE = r'<='        # Regex for a less than or equal
+    GE = r'>='        # Regex for a greater than or equal
+    GT = r'>'         # Regex for a greater than
+    LT = r'<'         # Regex for a less than
+    NOT = r'!'        # Regex for a logical NOT
     ASSIGN = r'='     # Regex for an equal sign
     SEMI = r';'      # Regex for a semicolon
     TIMES = r'\*'  # Regex for an asterisk
@@ -229,6 +238,9 @@ class GoneLexer(Lexer):
     @_(r'\'[^\']')
     def char_error(self, t):
         error(self.lineno,"Unterminated character constant")
+    
+    # Boolean literals
+    BOOL = r'true|false'
         
 
     # ----------------------------------------------------------------------

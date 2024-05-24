@@ -191,6 +191,9 @@ class CheckProgramVisitor(NodeVisitor):
     
     def visit_CharLiteral(self, node):
         node.type = Type.lookup('char')
+    
+    def visit_BoolLiteral(self, node):
+        node.type = Type.lookup('bool')
 
     def visit_BinOp(self, node):
         # For operators, you need to visit each operand separately.  You'll
