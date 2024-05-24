@@ -176,6 +176,35 @@ class CheckProgramVisitor(NodeVisitor):
         if node.location.type != node.value.type:
             error(node.lineno, f'type error. {node.location.type.name} = {node.value.type.name}')
     
+    def visit_IfStatement(self, node):
+        # Verifica la condicion del if
+        self.visit(node.test)
+
+        # Verifica que la condicion sea del tipo bool
+        if node.test.type.name != 'bool':
+            error(node.lineno, f'if condition must be bool, not {node.test.type.name}')
+
+        # Verifica el cuerpo del if
+        for statement in node.body:
+            self.visit(statement)
+        
+        # Verifica el cuerpo del else (si existe)
+        if node.orelse:
+            for statement in node.orelse:
+                self.visit(statement)
+    
+    def visit_WhileStatement(self, node):
+        # Verifica la condicion del while
+        self.visit(node.test)
+
+        # Verifica que la condicion sea del tipo bool
+        if node.test.type.name != 'bool':
+            error(node.lineno, f'while condition must be bool, not {node.test.type.name}')
+
+        # Verifica el cuerpo del while
+        for statement in node.body:
+            self.visit(statement)
+    
     def visit_ReadValue(self, node):
         node.location.usage = 'read'
         self.visit(node.location)
@@ -192,7 +221,7 @@ class CheckProgramVisitor(NodeVisitor):
     def visit_CharLiteral(self, node):
         node.type = Type.lookup('char')
     
-    def visit_BoolLiteral(self, node):
+    def visit_BooleanLiteral(self, node):
         node.type = Type.lookup('bool')
 
     def visit_BinOp(self, node):

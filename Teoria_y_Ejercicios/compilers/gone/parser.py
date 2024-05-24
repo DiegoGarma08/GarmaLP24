@@ -162,6 +162,14 @@ class GoneParser(Parser):
     @_('PRINT expression SEMI')
     def print_statement(self, p):
         return PrintStatement(p.expression,lineno=p.lineno)
+    
+    @_('IF expression LBRACE statements RBRACE ELSE LBRACE statements RBRACE')
+    def statement(self, p):
+        return IfStatement(p.expression, p.statements0, p.statements1, lineno=p.lineno)
+    
+    @_('WHILE expression LBRACE statements RBRACE')
+    def statement(self, p):
+        return WhileStatement(p.expression, p.statements, lineno=p.lineno)
 
     @_('PLUS expression')
     def expression(self, p):
@@ -217,9 +225,9 @@ class GoneParser(Parser):
     @_('BOOL')
     def literal(self, p):
         if p.BOOL == 'true':
-            return BoolLiteral(True,lineno=p.lineno)
+            return BooleanLiteral(True,lineno=p.lineno)
         else:
-            return BoolLiteral(False,lineno=p.lineno)
+            return BooleanLiteral(False,lineno=p.lineno)
     
     @_('ID')
     def location(self, p):

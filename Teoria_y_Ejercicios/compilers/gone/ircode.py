@@ -215,6 +215,14 @@ class GenerateCode(ast.NodeVisitor):
                 code = 'EQ'
             elif op == '!=':
                 code = 'NE'
+            elif op == '<':
+                code = 'LT'
+            elif op == '<=':
+                code = 'LE'
+            elif op == '>':
+                code = 'GT'
+            elif op == '>=':
+                code = 'GE'
             else:
                 raise RuntimeError(f'Unknown binop {op}')
 
@@ -308,6 +316,32 @@ class GenerateCode(ast.NodeVisitor):
         self.visit(node.value)
         node.location.register = node.value.register
         self.visit(node.location)
+    
+    def visit_IfStatement(self, node):
+        self.visit(node.test)
+        elseblock = self.new_register()
+        mergeblock = self.new_register()
+        self.code.append(('JUMP_IF_FALSE', node.test.register, elseblock))
+        for stmt in node.body:
+            self.visit(stmt)
+        self.code.append(('JUMP', mergeblock))
+        self.code.append(('BLOCK', elseblock))
+        for stmt in node.orelse:
+            self.visit(stmt)
+        self.code.append(('BLOCK', mergeblock))
+    
+    def visit_WhileStatement(self, node):
+        startblock = self.new_register()
+        bodyblock = self.new_register()
+        endblock = self.new_register()
+        self.code.append(('BLOCK', startblock))
+        self.visit(node.test)
+        self.code.append(('JUMP_IF_FALSE', node.test.register, endblock))
+        self.code.append(('BLOCK', bodyblock))
+        for stmt in node.body:
+            self.visit(stmt)
+        self.code.append(('JUMP', startblock))
+        self.code.append(('BLOCK', endblock))
 
 
 # ----------------------------------------------------------------------

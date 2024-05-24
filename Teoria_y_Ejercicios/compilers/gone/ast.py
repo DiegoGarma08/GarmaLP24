@@ -144,7 +144,7 @@ class FloatLiteral(Literal):
 class CharLiteral(Literal):
     value : str
 
-class BoolLiteral(Literal):
+class BooleanLiteral(Literal):
     value : bool
 
 class UnaryOp(Expression):
@@ -167,6 +167,21 @@ class ReadValue(Expression):
     Read a value from a location
     '''
     location : Location
+
+class IfStatement(Statement):
+    '''
+    Conditional statement
+    '''
+    test  : Expression
+    body  : [Statement]
+    orelse: [Statement]
+
+class WhileStatement(Statement):
+    '''
+    while loop
+    '''
+    test : Expression
+    body : [Statement]
 
 # ----------------------------------------------------------------------
 #                  DO NOT MODIFY ANYTHING BELOW HERE

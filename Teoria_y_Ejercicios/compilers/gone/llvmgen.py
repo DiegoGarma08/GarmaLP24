@@ -90,6 +90,8 @@ class GenerateLLVM(object):
         # the intermediate code.
         self.temps = {}
 
+        self.blocks = {}
+
         # Initialize the runtime library functions (see below)
         self.declare_runtime_library()
 
@@ -125,7 +127,10 @@ class GenerateLLVM(object):
         # instructions using the current builder (self.builder).  Each
         # opcode tuple (opcode, args) is dispatched to a method of the
         # form self.emit_opcode(args)
-
+        # First pass: Create LLVM blocks for all block labels
+        for instr in ircode:
+            if instr[0] == 'BLOCK':
+                self.blocks[instr[1]] = self.function.append_basic_block(instr[1])
         for opcode, *args in ircode:
             if hasattr(self, 'emit_'+opcode):
                 getattr(self, 'emit_'+opcode)(*args)
@@ -273,6 +278,10 @@ class GenerateLLVM(object):
         self.temps[target] = self.builder.icmp_signed('<', self.temps[left], self.temps[right], target)
         pass                 # You must implement
 
+    def emit_LT(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('<', self.temps[left], self.temps[right], target)
+        pass                 # You must implement
+
     def emit_LEI(self, left, right, target):
         self.temps[target] = self.builder.icmp_signed('<=', self.temps[left], self.temps[right], target)
         pass                 # You must implement
@@ -292,6 +301,9 @@ class GenerateLLVM(object):
         self.temps[target] = self.builder.fcmp_ordered('>',self.temps[left], self.temps[right], target)
     
     def emit_GTB(self, left, right, target):
+        self.temps[target] = self.builder.icmp_signed('>', self.temps[left], self.temps[right], target)
+    
+    def emit_GT(self, left, right, target):
         self.temps[target] = self.builder.icmp_signed('>', self.temps[left], self.temps[right], target)
     
     def emit_GEI(self, left, right, target):
@@ -327,6 +339,43 @@ class GenerateLLVM(object):
     def emit_PRINTB(self, source):
         self.builder.call(self.runtime['_print_byte'], [self.temps[source]])
         pass                 # You must implement
+
+    def emit_BRANCH(self, label):
+        self.builder.branch(self.blocks[label])
+
+    def emit_CBRANCH(self, condition, true_label, false_label):
+        true_block = self.blocks[true_label]
+        false_block = self.blocks[false_label]
+        self.builder.cbranch(self.temps[condition], true_block, false_block)
+    
+    def emit_RETURN(self, value):
+        ret_value = self.temps[value]
+        self.builder.ret(ret_value)
+    
+    def emit_JUMP_IF_FALSE(self, condition, target):
+        self.builder.cbranch(self.temps[condition], self.blocks[target], self.blocks[target])
+    
+    def emit_BLOCK(self, label):
+        self.builder.position_at_end(self.blocks[label])
+
+    # If statements
+    def emit_IF(self, condition, true_block, false_block):
+        with self.builder.if_else(self.temps[condition]) as (if_then, if_else):
+            with if_then:
+                self.emit_BRANCH(true_block)
+            with if_else:
+                self.emit_BRANCH(false_block)
+    
+    # While statements
+    def emit_WHILE(self, condition, body_block, end_block):
+        loop_test_block = self.blocks[body_block]
+        loop_exit_block = self.blocks[end_block]
+
+        self.builder.branch(loop_test_block)
+        self.builder.position_at_end(loop_test_block)
+
+        testvar = self.temps[condition]
+        self.builder.cbranch(testvar, loop_test_block, loop_exit_block)
 
 #######################################################################
 #                      TESTING/MAIN PROGRAM

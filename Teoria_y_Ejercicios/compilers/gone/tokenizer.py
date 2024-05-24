@@ -117,7 +117,7 @@ class GoneLexer(Lexer):
         PLUS, MINUS, TIMES, DIVIDE, ASSIGN, SEMI,OR,AND,EQ,NE,LE,GE,GT,LT,NOT,
 
         # Other symbols
-        LPAREN, RPAREN,
+        LPAREN, RPAREN,RBRACE,LBRACE
     }
 
     # ----------------------------------------------------------------------
@@ -181,6 +181,8 @@ class GoneLexer(Lexer):
     SEMI = r';'      # Regex for a semicolon
     TIMES = r'\*'  # Regex for an asterisk
     DIVIDE = r'/'     # Regex for a division sign
+    RBRACE = r'\}'    # Regex for a right brace
+    LBRACE = r'\{'    # Regex for a left brace
 
 
     # ----------------------------------------------------------------------
